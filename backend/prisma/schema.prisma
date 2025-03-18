@@ -1,0 +1,75 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      Role     @default(STAFF) // ADMIN, MANAGER, STAFF
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  orders    Order[]
+}
+
+model Order {
+  id        String   @id @default(uuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  items     Json     // Store order items as JSON [{ name, qty, price }]
+  total     Float
+  status    OrderStatus @default(PENDING) // PENDING, COMPLETED, CANCELLED
+  paymentMethod PaymentMethod @default(CASH) // CASH, CARD, ONLINE
+  createdAt DateTime @default(now())
+
+  // Generate Invoice for Completed Orders
+  invoice   Invoice?
+}
+
+model Invoice {
+  id        String   @id @default(uuid())
+  order     Order    @relation(fields: [orderId], references: [id])
+  orderId   String @unique
+  pdfUrl    String   // URL for the invoice PDF
+  printed   Boolean  @default(false) // To track if it’s printed
+  createdAt DateTime @default(now())
+}
+
+model Sale {
+  id        String   @id @default(uuid())
+  date      DateTime @default(now())
+  totalSales Float
+  totalExpenses Float
+  netProfit Float
+}
+
+model Expense {
+  id        String   @id @default(uuid())
+  category  String
+  amount    Float
+  date      DateTime @default(now())
+}
+
+enum Role {
+  ADMIN
+  MANAGER
+  STAFF
+}
+
+enum OrderStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+  ONLINE
+}
